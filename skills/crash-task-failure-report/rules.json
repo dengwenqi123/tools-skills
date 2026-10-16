@@ -1,0 +1,95 @@
+{
+  "_comment": "按顺序匹配，命中第一条即为主类别（越具体的越靠前）；所有命中的都会记录在 matched_rules。patterns 为 Python 正则，对任务日志块全文做 re.search。",
+  "rules": [
+    {
+      "category": "coredump_unsupported_combo",
+      "title": "product/core/dump 组合不受支持",
+      "patterns": [
+        "unsupported product/core_name/dump combination",
+        "unsupported product/core_name combination",
+        "get_coredump_cmd returned unexpected command"
+      ],
+      "code_ref": "parse_client/minidump_parser.py get_coredump_cmd()(HW_CORE_PRODUCTS 白名单) / analyze_coredump() exit 4; manager.py analyze_core_dump() 占位 command",
+      "fix_hint": "核对 product 大小写(白名单全小写)、core_name、dump 后缀(.core/.dump/.bin)是否在 get_coredump_cmd 分支内；确认 dump 文件名与核是否对应"
+    },
+    {
+      "category": "core_file_not_found",
+      "title": "core 文件在工作目录中不存在",
+      "patterns": ["core file not found"],
+      "code_ref": "parse_client/minidump_parser.py analyze_coredump()/diag_report exit 5",
+      "fix_hint": "检查 dump_log_path 拼接、逗号拼接串拆分、下载文件名"
+    },
+    {
+      "category": "download_failed",
+      "title": "elf/dump/串口日志下载失败",
+      "patterns": [
+        "\\[download\\] all retries exhausted",
+        "download (elf|dump|serial_log) failed",
+        "no elf downloaded"
+      ],
+      "code_ref": "parse_client/manager.py download_file() / init_task() download_* 阶段",
+      "fix_hint": "确认 FDS 链接是否存在(404/过期)、节点到 FDS 网络是否正常"
+    },
+    {
+      "category": "no_dump_file",
+      "title": "任务没有 dump 文件",
+      "patterns": ["no dump_log_path", "no dump_log_path_arr"],
+      "code_ref": "parse_client/manager.py analyze_core_dump()/analyze_diag_report()",
+      "fix_hint": "上游入库时 dump_log_path 为空却建了 coredump/diag 任务，检查任务创建条件"
+    },
+    {
+      "category": "init_task_failed",
+      "title": "init_task 异常(非下载)",
+      "patterns": ["init_task error", "init_task failed"],
+      "code_ref": "parse_client/manager.py init_task()",
+      "fix_hint": "看 init_task error 的异常堆栈(解压/路径/权限)"
+    },
+    {
+      "category": "gdb_tools_missing",
+      "title": "gdb 工具链缺失/不可用",
+      "patterns": [
+        "spawn failed",
+        "No module named 'nxstub'",
+        "gdb_tools/[^ ]+/nuttx/tools/gdbserver\\.py.*No such file",
+        "can't open file .*gdbserver\\.py"
+      ],
+      "code_ref": "parse_client/minidump_parser.py is_tools_path_usable() 回退 /home/mnt/crashlog/gdb_tools/<branch>",
+      "fix_hint": "节点上补齐 /home/mnt/crashlog/gdb_tools/<branch>/nuttx/tools，或修复 diag-tools/<commit>.zip"
+    },
+    {
+      "category": "timeout",
+      "title": "解析超时",
+      "patterns": ["TIMEOUT", "FunctionTimedOut", "timeout at phase=", "\\[subproc\\] timeout, killing", "err=subproc timeout"],
+      "code_ref": "parse_client/run_crash_log.py FunctionTimedOut 分支; manager.py @func_set_timeout",
+      "fix_hint": "看 thread_stacks 卡在哪一步(gdb expect/下载/上传)，评估超时阈值"
+    },
+    {
+      "category": "gdb_output_empty",
+      "title": "gdb 执行完成但无产出",
+      "patterns": [
+        "output_file missing/empty",
+        "gdb expect TIMEOUT",
+        "gdb EOF \\(exited\\)",
+        "gdbserver non-zero exit",
+        "diag_report empty",
+        "diag_report exhausted"
+      ],
+      "code_ref": "parse_client/minidump_parser.py analyze_coredump()/analyze_diag_report() exit 2/3",
+      "fix_hint": "看 tmp_tail/stderr_tail：elf 与 core 不匹配、remap 地址不对、工具链版本不兼容"
+    },
+    {
+      "category": "exception",
+      "title": "Python 异常",
+      "patterns": ["Traceback \\(most recent call last\\)", "exception at phase=", "parse task error"],
+      "code_ref": "parse_client/run_crash_log.py except Exception 分支",
+      "fix_hint": "按堆栈最内层定位代码"
+    },
+    {
+      "category": "coredump_empty",
+      "title": "coredump 结果为空(其他原因)",
+      "patterns": ["coredump empty"],
+      "code_ref": "parse_client/manager.py analyze_core_dump() coredump_link 为空",
+      "fix_hint": "症状类兜底：结合 [subproc] 行和 cmd execute error 的 returncode 判断真实原因"
+    }
+  ]
+}
