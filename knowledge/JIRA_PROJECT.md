@@ -1,0 +1,16 @@
+# JIRA 项目归属
+
+## jira.n（jira.n.xiaomi.com）
+
+- VELAPLATFO
+- VELAFORCAR
+- VELAEFF
+- O61N
+- O61WOS6
+- RTOSXMDPYX
+
+## jira-phone（jira-phone.mioffice.cn）
+
+- MIWEARRTOS、WDUFI
+- P62LC、P65LC、P65ZK、P67LC
+- Q61NHQ、Q63HQ、Q65ZH、Q66GTK、Q74UWM、Q95GTK
